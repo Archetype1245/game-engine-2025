@@ -77,7 +77,6 @@ class Transform extends Component {
     }
 
     get worldMatrix() {
-        // Unused for now - might be convenient?
         this._updateWorld()
         return this.world
     }

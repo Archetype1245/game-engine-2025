@@ -10,9 +10,7 @@ class PolygonCollider extends Component {
     draw(ctx) {
         if (this.hidden || this.points.length < 2) return
 
-        const p = this.transform.position;
-        const s = this.transform.scale
-        const r = this.transform.rotation
+        const { position: p, rotation: r, scale: s } = this.transform
 
         ctx.save()
         ctx.translate(p.x, p.y)

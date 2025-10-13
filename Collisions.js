@@ -6,8 +6,8 @@ class Collisions {
         const originalPointsB = b.getComponent(PolygonCollider).points
 
         //Apply the scale and positional transformational attributes to the points
-        const worldPointsA = originalPointsA.map(p => p.scale(a.transform.scale).plus(a.transform.position))
-        const worldPointsB = originalPointsB.map(p => p.scale(b.transform.scale).plus(b.transform.position))
+        const worldPointsA = originalPointsA.map(p => Mat2D.applyMatrixToPoint(a.transform.worldMatrix, p))
+        const worldPointsB = originalPointsB.map(p => Mat2D.applyMatrixToPoint(b.transform.worldMatrix, p))
         
         //Where each line formed by the polygons is stored
         const lines = []
