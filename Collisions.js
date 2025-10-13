@@ -1,36 +1,46 @@
+// ...existing code...
 class Collisions {
-  static inCollision(a, b) {
-    //Get the points in the polygons on each game object
-    const originalPointsA = a.getComponent(Polygon).points
-    const originalPointsB = b.getComponent(Polygon).points
+    static inCollision(a, b) {
+        //Get the points in the polygons on each game object
+        const originalPointsA = a.getComponent(PolygonCollider).points
+        const originalPointsB = b.getComponent(PolygonCollider).points
 
-    //Apply the scale and positional transformational attributes to the points
-    const worldPointsA = originalPointsA.map(p => p.scale(a.transform.scale).plus(a.transform.position))
-    const worldPointsB = originalPointsB.map(p => p.scale(b.transform.scale).plus(b.transform.position))
+        //Apply the scale and positional transformational attributes to the points
+        const worldPointsA = originalPointsA.map(p => p.scale(a.transform.scale).plus(a.transform.position))
+        const worldPointsB = originalPointsB.map(p => p.scale(b.transform.scale).plus(b.transform.position))
+        
+        //Where each line formed by the polygons is stored
+        const lines = []
+        //For all point pairs in both arrays, find the orthogonal line and add it to lines
+        for (const polygonPoints of [worldPointsA, worldPointsB]) {
+            for (let i = 0; i < polygonPoints.length; i++) {
+                const a = polygonPoints[i]
+                const b = polygonPoints[(i + 1) % polygonPoints.length]
+                lines.push(a.minus(b).orthogonal().normalize())
+            }
+        }
 
-    //Where each line formed by the polygons is stored
-    const lines = []
+        //For each line...
+        const diffs = []
+        for (const line of lines) {
+            //...Find the dot product of all points in both polygons...
+            const oneDots = worldPointsA.map(p => p.dot(line))
+            const twoDots = worldPointsB.map(p => p.dot(line))
 
-    //For all point pairs in both arrays, find the orthogonal line and add it to lines
-    for (const polygonPoints of [worldPointsA, worldPointsB]) {
-      for (let i = 0; i < polygonPoints.length; i++) {
-        const a = polygonPoints[i]
-        const b = polygonPoints[(i+1)%polygonPoints.length]
-        lines.push(a.minus(b).orthogonal())
-      }
+            //...and if there is a gap, they are not in collision
+            const diffA = Math.max(...oneDots) - Math.min(...twoDots)
+            const diffB = Math.max(...twoDots) - Math.min(...oneDots)
+            if (diffA < 0 || diffB < 0) return false
+
+            const minDiff = Math.min(diffA, diffB)
+            diffs.push(minDiff)
+        }
+
+        //If we get here, then the polygons were always overlapping, so we know they are in collision
+        const minDiff = Math.min(...diffs)
+        const minDiffIndex = diffs.indexOf(minDiff)
+        const mtvLine = lines[minDiffIndex]
+
+        return mtvLine.times(minDiff)
     }
-
-    //For each line...
-    for (const line of lines) {
-      //...Find the dot product of all points in both polygons...
-      const oneDots = worldPointsA.map(p => p.dot(line))
-      const twoDots = worldPointsB.map(p => p.dot(line))
-
-      //...and if there is a gap, they are not in collision
-      if (Math.max(...oneDots) < Math.min(...twoDots) || Math.max(...twoDots) < Math.min(...oneDots)) return false
-    }
-
-    //If we get here, then the polygons were always overlapping, so we know they are in collision
-    return true
-  }
 }

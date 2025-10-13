@@ -1,17 +1,18 @@
 class Component{
     name = this.constructor.name
     gameObject = null
+    started = false
     
-    start(){
+    start() {
 
     }
-    update(){
+    update() {
 
     }
-    draw(){
+    draw() {
         
     }
-
+    
     get transform() {
         return this.gameObject.transform
     }

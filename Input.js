@@ -8,7 +8,6 @@ class Input {
     static keysDown = new Set()
     static prevKeys = new Set()
     static mouseClicks = { left: false, right: false }
-    static queuedClicks = { left: false, right: false }
 
     static attach(canvas) {
         Input.canvas = canvas
@@ -22,13 +21,8 @@ class Input {
         canvas.addEventListener("contextmenu", e => e.preventDefault())
     }
 
-    static beginFrame() {
-        Input.mouseClicks.left = Input.queuedClicks.left
-        Input.mouseClicks.right = Input.queuedClicks.right
-        Input.queuedClicks = { left: false, right: false }
-    }
-
     static endFrame() {
+        Input.mouseClicks = { left: false, right: false }
         Input.prevKeys = new Set(Input.keysDown)
         Input.lastMouseX = Input.mouseX
         Input.lastMouseY = Input.mouseY   
@@ -72,16 +66,10 @@ class Input {
         Input.mouseMove(e)
         if (e.button === 0) {
             Input.mouseIsDown = false
-            Input.queuedClicks.left = true
+            Input.mouseClicks.left = true
         }
         if (e.button === 2) {
-            Input.queuedClicks.right = true
+            Input.mouseClicks.right = true
         }
-    }
-
-    static consumeClick(btn) {
-        const check = Input.clickType[btn]
-        Input.clickType[btn] = false
-        return check
     }
 }

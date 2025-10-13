@@ -19,8 +19,8 @@ class Vector2 {
     }
 
     plusEquals(other) {
-        this.x += other.x
-        this.y += other.y
+        this.x += other.x; this.y += other.y
+        return this
     }
 
     plus(other) {
@@ -41,5 +41,33 @@ class Vector2 {
 
     dot(other) {
         return this.x * other.x + this.y * other.y
+    }
+
+    orthogonal() {
+        return new Vector2(-this.y, this.x)
+    }
+
+    get magnitude() {
+        return Math.hypot(this.x, this.y)
+    }
+
+    normalize() {
+        if (this.magnitude < 1e-10) return this.times(1)
+        return this.times(1 / this.magnitude)
+    }
+
+    getDirectionVector(other) {
+        return this.minus(other).normalize()
+    }
+    // Returns the sum of multiple Vector2 objects inside an array
+    static sum(arr) {
+        let sum = Vector2.zero
+        arr.forEach(v2 => sum.plusEquals(v2))
+        return sum
+    }
+    // Mutates a Vector2 in place
+    setVec(x, y) {
+        this.x = x; this.y = y
+        return this
     }
 }

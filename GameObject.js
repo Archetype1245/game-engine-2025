@@ -1,6 +1,5 @@
 class GameObject {
-    name = ""
-    // components = []
+    name = "GameObject"
     components = new Map()
     hasStarted = false
     markForDelete = false
@@ -12,20 +11,25 @@ class GameObject {
 
     start() {
         for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.start?.())
+            componentList.forEach(c => c.start())
         }
         this.hasStarted = true
     }
 
     update() {
         for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.update?.())
+            componentList.forEach(c => c.update())
         }
+
+        // if (this.hasStarted) {
+        //     component.start()
+
+        // }
     }
 
     draw(ctx) {
         for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.draw?.(ctx))
+            componentList.forEach(c => c.draw(ctx))
         }
     }
 
@@ -36,11 +40,6 @@ class GameObject {
         this.components.get(type).push(component)
         component.gameObject = this
         Object.assign(component, values)
-
-        // if (this.hasStarted) {
-        //     component.start?.()
-
-        // }
 
         return component
     }
@@ -65,5 +64,18 @@ class GameObject {
 
     static getObjectByName(name) {
         return SceneManager.getActiveScene().gameObjects.find(gameObject => gameObject.name == name)
+    }
+
+    static instantiate(go, { position = null, scene = null, layer, forceStart = false }) {
+        const currentScene = scene ?? SceneManager.getActiveScene()
+        currentScene.gameObjects.push(go)
+
+        go.layer = layer ?? "background"
+        currentScene.addToLayerMap(go)
+
+        if (position) go.transform.position = position
+        // Basically a way to force a GO's Start() to act like Awake() would
+        if (forceStart) { go.start(); go.hasStarted = true }
+        return go
     }
 }

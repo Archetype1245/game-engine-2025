@@ -5,7 +5,11 @@ class Time {
 
     static update() {
         const now = performance.now()
-        Time.deltaTime = (now - Time.lastFrame)  // Kept dt in ms
+        Time.deltaTime = (now - Time.lastFrame) / 1000
         Time.lastFrame = now
+    }
+
+    static get time() {
+        return performance.now() / 1000
     }
 }

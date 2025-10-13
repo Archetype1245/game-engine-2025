@@ -20,13 +20,13 @@ class Engine {
     }
 
     static update() {
-        Input.beginFrame()
         Engine.currentScene.update()
         Engine.animation.update(Time.deltaTime)
+        Input.endFrame()
     }
 
     static draw() {
-        Engine.ctx.fillStyle = Config.visuals.background
+        Engine.ctx.fillStyle = "#003d58ff"
         Engine.ctx.beginPath()
         Engine.ctx.rect(0, 0, Engine.canvas.width, Engine.canvas.height)
         Engine.ctx.fill()

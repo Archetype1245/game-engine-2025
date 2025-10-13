@@ -1,29 +1,57 @@
 class Scene {
-    started = false
-    gameObjects = []
-    layerMap = new Map()
-    layerOrder = ["background", "foreground"]
+    constructor(bg = "white") {
+        this.started = false
+        this.layerOrder = ["background", "foreground"]
+        this.backgroundColor = bg
+        this.gameObjects = []
+        this.layerMap = new Map()
+
+        this.activeCamera = null
+    }
 
     start() {
         this.started = true
-
-        for (const gameObject of this.gameObjects) {
-            gameObject.start()
-        }
+        this.lightDir = new Vector2(Config.lighting.lightDirection.x, Config.lighting.lightDirection.y).normalize()
+        this.gameObjects.forEach(go => go.start())
     }
 
     update() {
-        for (const gameObject of this.gameObjects) {
-            if (!gameObject.hasStarted) {
-                gameObject.start()
-                gameObject.hasStarted = true
+        this.gameObjects.filter(go => !go.hasStarted).forEach(go => { go.start(); go.hasStarted = true })
+        this.gameObjects.forEach(go => go.update())
+
+        const gameObjectsWithColliders = this.gameObjects.filter(go => go.getComponent(Collider))
+        for (let i = 0; i < gameObjectsWithColliders.length; i++) {
+            for (let j = i + 1; j < gameObjectsWithColliders.length; j++) {
+                let a = gameObjectsWithColliders[i]
+                let b = gameObjectsWithColliders[j]
+                let response = Collisions.inCollision(a, b)
+                if (response) {
+                    if (a.getComponent(RigidBody)) {
+                        if (a.transform.position.minus(b.transform.position).dot(response) < 0)
+                            response *= -1
+                        a.transform.position.plusEquals(response)
+                    }
+                    if (b.getComponent(RigidBody)) {
+                        if (b.transform.position.minus(a.transform.position).dot(response) < 0)
+                            response *= -1
+                        b.transform.position.plusEquals(response)
+                    }
+                    for (const componentList of a.components.values()) {
+                        componentList.forEach(c => c.onCollisionEnter?.(b))
+                    }
+                    for (const componentList of b.components.values()) {
+                        componentList.forEach(c => c.onCollisionEnter?.(a))
+                    }
+                }
             }
-            gameObject.update()
         }
 
         this.gameObjects = this.gameObjects.filter(go => {
             if (go.markForDelete) {
                 this.removeFromLayerMap(go)
+                for (const componentList of go.components.values()) {
+                    componentList.forEach(c => c.onDestroy?.())
+                }
                 return false
             }
             return true
@@ -31,17 +59,20 @@ class Scene {
     }
 
     draw(ctx) {
+        ctx.save()
+        if (this.activeCamera) {
+            ctx.setTransform(Mat2D.toDOMMatrix(this.activeCamera.getScreenMatrix()))
+        }
+
         for (const layer of this.layerOrder) {
             const gameObjects = this.layerMap.get(layer)
             if (gameObjects) gameObjects.forEach(go => go.draw(ctx))
         }
+
+        ctx.restore()
     }
 
-    initLayers() {
-        for (const layer of this.layerOrder) {
-            this.layerMap.set(layer, new Set())
-        }
-    }
+    initLayers() { this.layerOrder.forEach(layer => this.layerMap.set(layer, new Set())) }
 
     ensureLayerOrThrow(layer) {
         if (this.layerMap.has(layer)) return true
@@ -72,30 +103,13 @@ class Scene {
 
     moveGameObjectBy(go, shift) {
         const fromLayer = this.layerOrder.indexOf(go.layer)
-        if(fromLayer < 0) throw new ReferenceError(`Layer "${go.layer}" not found.`)
+        if (fromLayer < 0) throw new ReferenceError(`Layer "${go.layer}" not found.`)
 
         const toLayer = Math.max(0, Math.min(this.layerOrder.length - 1, fromLayer + shift))
         if (fromLayer !== toLayer) this.changeLayer(go, this.getLayerNameByIndex(toLayer))
     }
 
-    moveGameObjectUp(go) {
-        this.moveGameObjectBy(go, 1)
-    }
+    moveGameObjectUp(go) { this.moveGameObjectBy(go, 1) }
 
-    moveGameObjectDown(go) {
-        this.moveGameObjectBy(go, -1)
-    }
-
-    static instantiate(gameObject, { position = null, scene = null, layer, forceStart = false }) {
-        const currentScene = scene ?? SceneManager.getActiveScene()
-        currentScene.gameObjects.push(gameObject)
-
-        gameObject.layer = layer ?? "background"
-        currentScene.addToLayerMap(gameObject)
-
-        if (position) gameObject.transform.position = position
-        // Basically a way to force a GO's Start() to act like Awake() would
-        if (forceStart) { gameObject.start(); gameObject.hasStarted = true }
-        return gameObject
-    }
+    moveGameObjectDown(go) { this.moveGameObjectBy(go, -1) }
 }
