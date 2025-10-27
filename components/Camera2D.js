@@ -9,6 +9,10 @@ class Camera2D extends Component {
         this._recomputeEffective()
     }
 
+    static get main() {
+        return GameObject.getObjectByName("CameraGameObject")
+    }
+
     setZoom(z) {
         this.zoom = z
         this._recomputeEffective

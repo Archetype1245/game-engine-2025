@@ -8,21 +8,20 @@ class Engine {
         Engine.bufferCanvas = document.createElement("canvas")
         Engine.bctx = Engine.bufferCanvas.getContext("2d", {alpha: true})
         
-
-
         window.addEventListener("resize", Engine.resizeCanvas)
         Engine.resizeCanvas()
 
-        Engine.currentScene.start()
+        SceneManager.update()
+        SceneManager.currentScene.start()
         Engine.animation = new AnimationManager()
         Engine.fps = new FPSTracker({ smooth: 0.9, history: 240, uiHz: 4 });
         requestAnimationFrame(Engine.gameLoop)
     }
 
 
-
     static gameLoop(now) {
         Time.update()
+        SceneManager.update()
         Engine.update()
         Engine.draw()
         Engine.fps.frame(now)
@@ -30,7 +29,7 @@ class Engine {
     }
 
     static update() {
-        Engine.currentScene.update()
+        SceneManager.currentScene.update()
         Engine.animation.update(Time.deltaTime)
         Input.endFrame()
     }
@@ -41,7 +40,7 @@ class Engine {
         Engine.ctx.rect(0, 0, Engine.canvas.width, Engine.canvas.height)
         Engine.ctx.fill()
 
-        Engine.currentScene.draw(Engine.ctx)
+        SceneManager.currentScene.draw(Engine.ctx)
     }
 
     static resizeCanvas() {

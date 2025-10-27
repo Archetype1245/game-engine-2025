@@ -15,7 +15,7 @@ class GameObject {
             componentList.forEach(c => c.start())
         }
 
-        Engine.currentScene.registerForCollision(this)
+        SceneManager.currentScene.registerForCollision(this)
         this.hasStarted = true
     }
 
@@ -66,7 +66,7 @@ class GameObject {
     }
 
     static getObjectByName(name) {
-        return SceneManager.getActiveScene().gameObjects.find(gameObject => gameObject.name == name)
+        return SceneManager.currentScne.gameObjects.find(gameObject => gameObject.name == name)
     }
 
     static instantiate(go, { position = null, scene = null, layer, forceStart = false }) {

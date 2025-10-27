@@ -1,13 +1,19 @@
 class SceneManager {
-    static scenes = []
-    static currentSceneIndex = 0
+    static currentScene
+    static nextScene
 
-    static addScene(scene) {
-        SceneManager.scenes.push(scene)
-        return scene
+    static update() {
+        if (SceneManager.nextScene) {
+            SceneManager.currentScene = SceneManager.nextScene
+            SceneManager.nextScene = undefined
+        }
+    }
+    
+    static loadScene(scene) {
+        SceneManager.nextScene = scene
     }
 
     static getActiveScene() {
-        return SceneManager.scenes[SceneManager.currentSceneIndex];
+        return SceneManager.currentScene
     }
 }

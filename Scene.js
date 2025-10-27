@@ -11,6 +11,10 @@ class Scene {
         this._hits = []
 
         this.activeCamera = null
+
+        if (typeof Camera2D !== "undefined") {
+            GameObject.instantiate(new CameraGameObject())
+        }
     }
 
     start() {
