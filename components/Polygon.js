@@ -5,6 +5,7 @@ class Polygon extends Component {
     fill = true
     strokeStyle = null
     lineWidth = 1
+    closePath = true
     hidden = false
 
     _path2d = null
@@ -39,32 +40,24 @@ class Polygon extends Component {
         for (let i = 1; i < pts.length; i++) {
             p.lineTo(pts[i].x, pts[i].y)
         }
-        p.closePath()
+        if (this.closePath) p.closePath()
     }
 
     draw(ctx) {
         if (this.hidden || this.points.length < 2) return
 
-        const { position: p, rotation: r, scale: s } = this.transform
-
-        ctx.save()
-        ctx.translate(p.x, p.y)
-        ctx.rotate(r)
-        ctx.scale(s.x, s.y)
-
         const path = this.path2d
-
         if (this.fill) {
             ctx.fillStyle = this.fillStyle
             ctx.fill(path)
         }
-
+        
         if (this.strokeStyle) {
+            const s = Math.abs(this.transform.scale.x)
             ctx.strokeStyle = this.strokeStyle
-            ctx.lineWidth = this.lineWidth / s.x
+            ctx.lineWidth = this.lineWidth / s
             ctx.miterLimit = 2
             ctx.stroke(path)
         }
-        ctx.restore()
     }
 }

@@ -1,6 +1,7 @@
 class Camera2D extends Component {
     constructor({ aspect=16/9, viewWidth=16, viewHeight=9, zoom=1 } = {}) {
         super()
+        this.backgroundColor = "black"
         this.aspect = aspect
         this.viewWidth = viewWidth
         this.viewHeight = viewHeight

@@ -22,28 +22,31 @@ class Transform extends Component {
         this.world = Mat2D.identity
         this.worldInv = Mat2D.identity
 
-        this._dirtyLocal = true
-        this._dirtyWorld = true
+        this._localVersion = 0
+        this._worldVersion = 0
+        this._lastLocalBuilt = -1
+        this._lastLocalVersion = -1
+        this._lastParentWorldVersion = -1
     }
 
     get position() { return new Vector2(this._position.x, this._position.y) }
     set position(v) {
         this._position.x = v.x
         this._position.y = v.y
-        this._dirtyLocal = this._dirtyWorld = true
+        this.markLocalDirty()
     }
 
     get rotation() { return this._rotation }
     set rotation(r) {
         this._rotation = r
-        this._dirtyLocal = this._dirtyWorld = true
+        this.markLocalDirty()
     }
 
     get scale() { return new Vector2(this._scale.x, this._scale.y) }
     set scale(s) {
         this._scale.x = s.x
         this._scale.y = s.y
-        this._dirtyLocal = this._dirtyWorld = true
+        this.markLocalDirty()
     }
 
     get worldPosition() {
@@ -73,12 +76,12 @@ class Transform extends Component {
     get worldInverse() {
         // Used in cam
         this._updateWorld()
-        return this.worldInv
+        return { ...this.worldInv }
     }
 
     get worldMatrix() {
         this._updateWorld()
-        return this.world
+        return { ...this.world }
     }
 
     get worldRotation() {
@@ -99,44 +102,53 @@ class Transform extends Component {
         // Pass
     }
 
-    setPosition(x, y) { this.position = { x, y } }
-    setRotation(r) {
-        if (r > 1000 || r < -1000) {
-            r = (r + Math.PI) % (2*Math.PI)
-            r <= 0 ? r + Math.PI : r - Math.PI
-        }
-        this.rotation = r
-    }
-    setScale(sx, sy) { this.scale = new Vector2(sx, sy) }
-    setUniformScale(s) { this.scale = new Vector2(s, s)}
+    markLocalDirty() { this._localVersion++ }
 
+    get localVersion() { return this._localVersion }
+    get worldVersion() { return this._worldVersion }
+
+    setPosition(x, y) { this.position = { x, y } }
+    setRotation(r) { this.rotation = r }
+
+    setScale(sx, sy = sx) { this.scale = new Vector2(sx, sy) }
     translate(dx, dy) { this.setPosition(this.position.x + dx, this.position.y + dy) }
     rotate(r) { this.setRotation(this.rotation + r) }
     scaleBy(sx, sy) { this.setScale(this.scale.x * sx, this.scale.y * sy) }
 
     _updateLocal() {
-        if (!this._dirtyLocal) return
+        if (this._lastLocalBuilt !== this._localVersion) {
+            const t = this._position, r = this._rotation, s = this._scale
+            this.local = Mat2D.matrixFromTRS(t, r, s)
 
-        const t = this.position
-        const r = this.rotation
-        const s = this.scale
-
-        this.local = Mat2D.matrixFromTRS(t, r, s)
-        this._dirtyLocal = false
-        this._dirtyWorld = true
+            this._lastLocalBuilt = this._localVersion
+        }
     }
 
     _updateWorld() {
         this._updateLocal()
-        if (!this._dirtyWorld) return
 
-        if (!this.parent) {
-            this.world = { ...this.local }
-        } else {
-            this.parent._updateWorld()
-            this.world = Mat2D.matrix2dMultiply(this.parent.world, this.local)
+        const parent = this.parent
+        let parentWorldVer = this._lastParentWorldVersion
+
+        if (parent && parent._worldVersion !== parentWorldVer) {
+            parent._updateWorld()
+            parentWorldVer = parent._worldVersion
         }
-        this.worldInv = Mat2D.invMatrix(this.world)
+
+        if (this._lastLocalVersion !== this._localVersion ||
+            this._lastParentWorldVersion !== parentWorldVer) {
+
+            if (parent) {
+                this.world = Mat2D.matrix2dMultiply(parent.world, this.local)
+            } else {
+                this.world = { ...this.local }
+            }
+            this.worldInv = Mat2D.invMatrix(this.world)
+
+            this._lastLocalVersion = this._localVersion
+            this._lastParentWorldVersion = parentWorldVer
+            this._worldVersion++
+        }
     }
 
     setParent(newParent, keepWorldPos = true) {

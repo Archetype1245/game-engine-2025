@@ -1,5 +1,6 @@
 class GameObject {
     name = "GameObject"
+    layer = "background"
     components = new Map()
     hasStarted = false
     markForDelete = false
@@ -13,6 +14,8 @@ class GameObject {
         for (const componentList of this.components.values()) {
             componentList.forEach(c => c.start())
         }
+
+        Engine.currentScene.registerForCollision(this)
         this.hasStarted = true
     }
 
@@ -70,11 +73,10 @@ class GameObject {
         const currentScene = scene ?? SceneManager.getActiveScene()
         currentScene.gameObjects.push(go)
 
-        go.layer = layer ?? "background"
+        if (layer) go.layer = layer
         currentScene.addToLayerMap(go)
 
         if (position) go.transform.position = position
-        // Basically a way to force a GO's Start() to act like Awake() would
         if (forceStart) { go.start(); go.hasStarted = true }
         return go
     }

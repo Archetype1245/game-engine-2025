@@ -22,15 +22,22 @@ class Vector2 {
         this.x += other.x; this.y += other.y
         return this
     }
-
     plus(other) {
         return new Vector2(this.x + other.x, this.y + other.y)
     }
 
+    minusEquals(other) {
+        this.x -= other.x; this.y -= other.y
+        return this
+    }
     minus(other) {
         return new Vector2(this.x - other.x, this.y - other.y)
     }
 
+    timesEquals(scalar) {
+        this.x *= scalar, this.y *= scalar
+        return this
+    }
     times(scalar) {
         return new Vector2(this.x * scalar, this.y * scalar)
     }
@@ -52,7 +59,7 @@ class Vector2 {
     }
 
     normalize() {
-        if (this.magnitude < 1e-10) return this.times(1)
+        if (this.magnitude < MathUtils.EPS) return Vector2.zero
         return this.times(1 / this.magnitude)
     }
 

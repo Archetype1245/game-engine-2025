@@ -1,19 +1,19 @@
 class Mat2D {
     // Helpers - can be used to easily combine multiple transforms into a single matrix
     // Returns the identity matrix, where î and ĵ are their default values (no scale/rotation), with no translation
-    static get identity() { return { a:1, b:0, c:0, d:1, tx:0, ty:0 } }
+    static get identity() { return { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 } }
 
     // Returns a transform matrix that holds info to translate by (x,y)
-    static translate(x, y) { return { a:1, b:0, c:0, d:1, tx:x, ty:y } }
+    static translate(x, y) { return { a: 1, b: 0, c: 0, d: 1, tx: x, ty: y } }
 
     // Returns a transform matrix that holds info to scale by (sx, sy)
-    static scale(sx, sy=sx) { return { a:sx, b:0, c:0, d: sy, tx:0, ty:0 } }
+    static scale(sx, sy = sx) { return { a: sx, b: 0, c: 0, d: sy, tx: 0, ty: 0 } }
 
     // Returns a transform matrix that holds info to rotate by `r`
     static rotate(r) {
         const c = Math.cos(r)
         const s = Math.sin(r)
-        return { a:c, b:s, c:-s, d:c, tx:0, ty:0 }
+        return { a: c, b: s, c: -s, d: c, tx: 0, ty: 0 }
     }
 
     // Given a translation, rotation, and scale, returns a 2D matrix encoding the info
@@ -41,19 +41,30 @@ class Mat2D {
          * Recursively calling this via will ultimately provide world space transformation for the child transform
          */
         return {
-            a:  m1.a * m2.a +  m1.c * m2.b,
-            b:  m1.b * m2.a +  m1.d * m2.b,
-            c:  m1.a * m2.c +  m1.c * m2.d,
-            d:  m1.b * m2.c +  m1.d * m2.d,
+            a:  m1.a * m2.a  + m1.c * m2.b,
+            b:  m1.b * m2.a  + m1.d * m2.b,
+            c:  m1.a * m2.c  + m1.c * m2.d,
+            d:  m1.b * m2.c  + m1.d * m2.d,
             tx: m1.a * m2.tx + m1.c * m2.ty + m1.tx,
             ty: m1.b * m2.tx + m1.d * m2.ty + m1.ty
         }
     }
 
+    static matrix2X2Multiply(m1, m2) {
+        return {
+            a: m1.a * m2.a + m1.c * m2.b,
+            b: m1.b * m2.a + m1.d * m2.b,
+            c: m1.a * m2.c + m1.c * m2.d,
+            d: m1.b * m2.c + m1.d * m2.d,
+        }
+    }
+
     static invMatrix(m) {
         const det = m.a * m.d - m.b * m.c
-        const EPS = 1e-12
-        if (Math.abs(det) < EPS) return null    // Shouldn't be an issue for the projects worked on here - can adjust (or handle elsewhere) if needed
+        if (!Number.isFinite(det) || Math.abs(det) < MathUtils.EPS) {
+            console.warn("Degenerate matrix inverse attempt", m)
+            return Mat2D.identity
+        }
 
         const invDet = 1 / det
         // { a,b,c,d } determines rotation and scale, and the inverse matrix negates the transformation's rotation/scale/reflection/shear/etc.
@@ -71,13 +82,13 @@ class Mat2D {
     }
 
     static applyMatrixToPoint(m, p) {
-        return new Vector2(m.a*p.x + m.c*p.y + m.tx,
-                           m.b*p.x + m.d*p.y + m.ty)
+        return new Vector2(m.a * p.x + m.c * p.y + m.tx,
+                           m.b * p.x + m.d * p.y + m.ty)
     }
 
     static applyRSToPoint(m, p) {
-        return new Vector2(m.a*p.x + m.c*p.y,
-                           m.b*p.x + m.d*p.y)
+        return new Vector2(m.a * p.x + m.c * p.y,
+                           m.b * p.x + m.d * p.y)
     }
 
     // Helper for ctx.SetTransform, since it expects either six numbers or a DOMMatrix

@@ -1,21 +1,31 @@
 class Engine {
+
     static start() {
         Engine.canvas = document.querySelector("#canv")
         Engine.ctx = Engine.canvas.getContext("2d")
         Input.attach(Engine.canvas)
 
+        Engine.bufferCanvas = document.createElement("canvas")
+        Engine.bctx = Engine.bufferCanvas.getContext("2d", {alpha: true})
+        
+
+
         window.addEventListener("resize", Engine.resizeCanvas)
         Engine.resizeCanvas()
+
         Engine.currentScene.start()
         Engine.animation = new AnimationManager()
-        Engine.gameLoop()
+        Engine.fps = new FPSTracker({ smooth: 0.9, history: 240, uiHz: 4 });
+        requestAnimationFrame(Engine.gameLoop)
     }
 
 
-    static gameLoop() {
+
+    static gameLoop(now) {
         Time.update()
         Engine.update()
         Engine.draw()
+        Engine.fps.frame(now)
         requestAnimationFrame(Engine.gameLoop)
     }
 
