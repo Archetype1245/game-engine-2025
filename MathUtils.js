@@ -1,6 +1,6 @@
 class MathUtils {
     static INV_SQRT2 = 1 / Math.SQRT2
-    static EPS = 1e-8
+    static EPS = 1e-3
 
     static clamp(v, min, max) {
         return v < min ? min
@@ -24,5 +24,9 @@ class MathUtils {
 
     static getCentroid(points) {
         return Vector2.sum(points).times(1 / points.length)
+    }
+
+    static easeInOutCubic(t) {
+        return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2
     }
 }

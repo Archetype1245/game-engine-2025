@@ -4,6 +4,7 @@ class Text extends Component {
     font = "24px 'Comic Sans MS'"
     textAlign = "center"
     textBaseline = "middle"
+    hidden = false
 
     glow = false
     glowConfig = {
@@ -25,12 +26,13 @@ class Text extends Component {
 
 
     draw(ctx) {
-        if (!this.text) return
+        if (!this.text || this.hidden) return
 
         const s = Math.abs(this.transform.scale.x)
         ctx.font = this.font
         ctx.textAlign = this.textAlign
-        ctx.textBaseLine = this.textBaseline
+        ctx.textBaseline = this.textBaseline
+        ctx.fillStyle = this.fillStyle
 
         if (this.glow) {
             const { color, blur, offsetX, offsetY, alpha } = this.glowConfig
@@ -45,7 +47,6 @@ class Text extends Component {
             ctx.restore()
         }
 
-        ctx.fillStyle = this.fillStyle
         ctx.fillText(this.text, 0, 0)
 
         if (this.outline) {

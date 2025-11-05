@@ -1,7 +1,7 @@
 class Camera2D extends Component {
-    constructor({ aspect=16/9, viewWidth=16, viewHeight=9, zoom=1 } = {}) {
+    constructor({ backgroundColor="black", aspect=16/9, viewWidth=16, viewHeight=9, zoom=1 } = {}) {
         super()
-        this.backgroundColor = "black"
+        this.backgroundColor = backgroundColor
         this.aspect = aspect
         this.viewWidth = viewWidth
         this.viewHeight = viewHeight
@@ -45,8 +45,8 @@ class Camera2D extends Component {
         const cnv = Engine.canvas
         const ratio = this.scaleRatio(cnv)
 
-        const V = this.transform.worldInverse                                      // Matrix to convert from world -> camera
-        const S = Mat2D.scale(ratio)                                               // Matrix to scale by the calculated ratio
+        const V = this.transform.worldInverse                      // Matrix to convert from world -> camera
+        const S = Mat2D.scale(ratio)                               // Matrix to scale by the calculated ratio
         const C = Mat2D.translate(cnv.width / 2, cnv.height / 2)   // Matrix to translate to canvas center
 
         // Screen transform -> C * S * V

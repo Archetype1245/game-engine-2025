@@ -1,20 +1,17 @@
 class Scene {
     constructor(bg = "white") {
         this.started = false
-        this.layerOrder = ["background", "foreground"]
+        this.layerOrder = ["background", "ui"]
         this.backgroundColor = bg
         this.gameObjects = []
         this.layerMap = new Map()
+        this.initLayers()
 
         this.colliderActors = new Set()             // GOs that should initiate collision checks
         this.colliderTargets = new Set()            // Potential targets of the collision checks
         this._hits = []
 
         this.activeCamera = null
-
-        if (typeof Camera2D !== "undefined") {
-            GameObject.instantiate(new CameraGameObject())
-        }
     }
 
     start() {
@@ -128,7 +125,11 @@ class Scene {
         ctx.restore()
     }
 
-    initLayers() { this.layerOrder.forEach(layer => this.layerMap.set(layer, new Set())) }
+    initLayers() { 
+        for (const layer of this.layerOrder) {
+            if (!this.layerMap.get(layer)) this.layerMap.set(layer, new Set())
+        }
+    }
 
     ensureLayerOrThrow(layer) {
         if (this.layerMap.has(layer)) return true

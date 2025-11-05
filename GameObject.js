@@ -66,11 +66,11 @@ class GameObject {
     }
 
     static getObjectByName(name) {
-        return SceneManager.currentScne.gameObjects.find(gameObject => gameObject.name == name)
+        return SceneManager.currentScene.gameObjects.find(gameObject => gameObject.name == name)
     }
 
     static instantiate(go, { position = null, scene = null, layer, forceStart = false }) {
-        const currentScene = scene ?? SceneManager.getActiveScene()
+        const currentScene = scene ?? SceneManager.currentScene
         currentScene.gameObjects.push(go)
 
         if (layer) go.layer = layer

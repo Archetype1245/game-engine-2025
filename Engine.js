@@ -1,12 +1,11 @@
 class Engine {
-
     static start() {
         Engine.canvas = document.querySelector("#canv")
         Engine.ctx = Engine.canvas.getContext("2d")
         Input.attach(Engine.canvas)
 
-        Engine.bufferCanvas = document.createElement("canvas")
-        Engine.bctx = Engine.bufferCanvas.getContext("2d", {alpha: true})
+        Engine.offscreenCanvas = document.createElement("canvas")
+        Engine.ctxOS = Engine.offscreenCanvas.getContext("2d", {alpha: true})
         
         window.addEventListener("resize", Engine.resizeCanvas)
         Engine.resizeCanvas()
@@ -35,7 +34,7 @@ class Engine {
     }
 
     static draw() {
-        Engine.ctx.fillStyle = "#003d58ff"
+        Engine.ctx.fillStyle = SceneManager.currentScene.activeCamera.backgroundColor
         Engine.ctx.beginPath()
         Engine.ctx.rect(0, 0, Engine.canvas.width, Engine.canvas.height)
         Engine.ctx.fill()
