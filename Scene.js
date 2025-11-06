@@ -1,91 +1,106 @@
 class Scene {
-    constructor(bg = "white") {
+    constructor(config={}) {
         this.started = false
         this.layerOrder = ["background", "ui"]
-        this.backgroundColor = bg
         this.gameObjects = []
         this.layerMap = new Map()
         this.initLayers()
 
-        this.colliderActors = new Set()             // GOs that should initiate collision checks
-        this.colliderTargets = new Set()            // Potential targets of the collision checks
+        this.collidersByTag = new Map()
+        this.collisionPairs = config.collisionPairs ?? []
         this._hits = []
+
+        const trackedTags = config.trackedTags ?? []
+        this.spatialMap = new SpatialMap(64, trackedTags)
 
         this.activeCamera = null
     }
 
     start() {
         this.started = true
-        this.lightDir = new Vector2(Config.lighting.lightDirection.x, Config.lighting.lightDirection.y).normalize()
         this.gameObjects.forEach(go => go.start())
     }
 
     update() {
         this.gameObjects.filter(go => !go.hasStarted).forEach(go => { go.start(); go.hasStarted = true })
         this.gameObjects.forEach(go => go.update())
-        for (const t of this.colliderTargets) { this.cellData.update(t) }
 
-        for (const a of this.colliderActors) {
-            if (a.markForDelete) continue
+        for (const [tag, gameObjects] of this.collidersByTag) {
+            if (this.spatialMap.isTagTracked(tag)) {
+                gameObjects.forEach(go => this.spatialMap.update(go))
+            }
+        }
+        
+        for (const pair of this.collisionPairs) {
+            const [tagA, tagB] = pair
+            console.log(tagA, tagB)
+            const actorSet = this.collidersByTag.get(tagA)
+            const targetSet = this.collidersByTag.get(tagB)
 
-            const hits = this.cellData.searchNeighbors(a, Config.objectType.enemy, this._hits)
-            const rA = a.collider?.radius
-            const pA = a.transform._position
-            const swept = a.getComponent(SweptCircle)
-            const useCCD = !!swept
+            if (!actorSet || !targetSet) continue
 
-            for (const b of hits) {
-                if (b.markForDelete) continue
+            for (const a of actorSet) {
+                if (a.markForDelete) continue
 
-                const bPoly = b.collider ?? b.getComponent(PolygonCollider)
-                const rB = bPoly.radius
-                const pB = b.transform._position
+                let targets
+                if (this.spatialMap.isTagTracked(tagB)) {
+                    targets = this.spatialMap.searchNeighbors(a, tagB, this._hits)
+                } else {
+                    targets = targetSet
+                }
 
-                // If the GO has a SweptCircle component, check for hits via CCD. Otherwise use the other methods.
-                if (useCCD) {
-                    const p0 = swept.prevPos
-                    const p1 = pA
-                    const r = swept.r
-                    if (!Collisions.capsuleHitsPoly(p0, p1, r, bPoly)) continue
+                const rA = a.collider?.radius
+                const pA = a.transform._position
+                const swept = a.getComponent(SweptCircle)
+                const useCCD = !!swept
 
+                for (const b of targets) {
+                    if (a === b || b.markForDelete) continue
+
+                    const bPoly = b.collider ?? b.getComponent(PolygonCollider)
+                    const rB = bPoly.radius
+                    const pB = b.transform._position
+                    // If the GO has a SweptCircle component, check for hits via CCD. Otherwise use the other methods.
+                    if (useCCD) {
+                        const p0 = swept.prevPos
+                        const p1 = pA
+                        const r = swept.r
+                        if (!Collisions.capsuleHitsPoly(p0, p1, r, bPoly)) continue
+                        for (const componentList of a.components.values()) {
+                            componentList.forEach(c => c.onCollisionEnter?.(b))
+                        }
+                        for (const componentList of b.components.values()) {
+                            componentList.forEach(c => c.onCollisionEnter?.(a))
+                        }
+                        continue
+                    }
+                    // If either Collider is missing a radius, skip the quick radius check and just check collision using SAT below
+                    if (rA && rB) {
+                        const dx = pA.x - pB.x
+                        const dy = pA.y - pB.y
+                        const r2 = rA + rB
+                        // If the hypotenuse of the x and y components is longer than the sum of the two radii, the GOs can't be in coll
+                        // Comparing the squares rather than calculating out the sqrt via Math.hypot(dx, dy)
+                        if ((dx * dx + dy * dy) > (r2 * r2)) continue
+                    }
+                    let response = Collisions.inCollision(a, b)
+                    if (!response) continue
+                    if (a.getComponent(RigidBody)) {
+                        const dot = (pB.x - pA.x) * response.x + (pB.y - pA.y) * response.y
+                        if (dot < 0) response = response.times(-1)
+                        a.transform.translate(response.x, response.y)
+                    }
+                    if (b.getComponent(RigidBody)) {
+                        const dot = (pA.x - pB.x) * response.x + (pA.y - pB.y) * response.y
+                        if (dot < 0) response = response.times(-1)
+                        b.transform.translate(response.x, response.y)
+                    }
                     for (const componentList of a.components.values()) {
                         componentList.forEach(c => c.onCollisionEnter?.(b))
                     }
                     for (const componentList of b.components.values()) {
                         componentList.forEach(c => c.onCollisionEnter?.(a))
                     }
-                    continue
-                }
-
-                // If either Collider is missing a radius, skip the quick radius check and just check collision using SAT below
-                if (rA && rB) {
-                    const dx = pA.x - pB.x
-                    const dy = pA.y - pB.y
-                    const r2 = rA + rB
-                    // If the hypotenuse of the x and y components is longer than the sum of the two radii, the GOs can't be in collision
-                    // Comparing the squares rather than calculating out the sqrt via Math.hypot(dx, dy)
-                    if ((dx * dx + dy * dy) > (r2 * r2)) continue
-                }
-
-                let response = Collisions.inCollision(a, b)
-                if (!response) continue
-
-                if (a.getComponent(RigidBody)) {
-                    const dot = (pB.x - pA.x) * response.x + (pB.y - pA.y) * response.y
-                    if (dot < 0) response = response.times(-1)
-                    a.transform.translate(response.x, response.y)
-                }
-                if (b.getComponent(RigidBody)) {
-                    const dot = (pA.x - pB.x) * response.x + (pA.y - pB.y) * response.y
-                    if (dot < 0) response = response.times(-1)
-                    b.transform.translate(response.x, response.y)
-                }
-
-                for (const componentList of a.components.values()) {
-                    componentList.forEach(c => c.onCollisionEnter?.(b))
-                }
-                for (const componentList of b.components.values()) {
-                    componentList.forEach(c => c.onCollisionEnter?.(a))
                 }
             }
         }
@@ -94,6 +109,7 @@ class Scene {
             if (go.markForDelete) {
                 this.removeFromLayerMap(go)
                 this.unregisterForCollision(go)
+                this.spatialMap.remove(go)
                 for (const componentList of go.components.values()) {
                     componentList.forEach(c => c.onDestroy?.())
                 }
@@ -125,7 +141,7 @@ class Scene {
         ctx.restore()
     }
 
-    initLayers() { 
+    initLayers() {
         for (const layer of this.layerOrder) {
             if (!this.layerMap.get(layer)) this.layerMap.set(layer, new Set())
         }
@@ -172,12 +188,27 @@ class Scene {
     registerForCollision(go) {
         if (!(go.getComponent(PolygonCollider) || go.getComponent(SweptCircle))) return
 
-        if ((go.type & Config.objectType.enemy) === 0) { this.colliderActors.add(go) }
-        else { this.colliderTargets.add(go) }
+        const tag = go.tag
+        if (!this.collidersByTag.has(tag)) {
+            this.collidersByTag.set(tag, new Set())
+        }
+        this.collidersByTag.get(tag).add(go)
+
+        if (this.spatialMap.isTagTracked(tag)) {
+            this.spatialMap.insert(go)
+        }
     }
 
     unregisterForCollision(go) {
-        this.colliderActors.delete(go)
-        this.colliderTargets.delete(go)
+        const tag = go.tag
+        const tagSet = this.collidersByTag.get(tag)
+
+        if (tagSet) {
+            tagSet.delete(go)
+
+            if (tagSet.size === 0) {
+                this.collidersByTag.delete(tag)
+            }
+        }
     }
 }

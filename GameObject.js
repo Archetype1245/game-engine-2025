@@ -1,6 +1,7 @@
 class GameObject {
     name = "GameObject"
     layer = "background"
+    tag = "default"
     components = new Map()
     hasStarted = false
     markForDelete = false
