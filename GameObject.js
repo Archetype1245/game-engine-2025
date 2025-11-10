@@ -20,9 +20,9 @@ class GameObject {
         this.hasStarted = true
     }
 
-    update() {
+    update(dt) {
         for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.update())
+            componentList.forEach(c => c.update(dt))
         }
 
         // if (this.hasStarted) {

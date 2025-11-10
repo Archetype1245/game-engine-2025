@@ -13,7 +13,7 @@ class Engine {
         SceneManager.update()
         SceneManager.currentScene.start()
         Engine.animation = new AnimationManager()
-        Engine.fps = new FPSTracker({ smooth: 0.9, history: 240, uiHz: 4 });
+        // Engine.fps = new FPSTracker({ smooth: 0.9, history: 240, uiHz: 4 });
         requestAnimationFrame(Engine.gameLoop)
     }
 
@@ -23,12 +23,12 @@ class Engine {
         SceneManager.update()
         Engine.update()
         Engine.draw()
-        Engine.fps.frame(now)
+        // Engine.fps.frame(now)
         requestAnimationFrame(Engine.gameLoop)
     }
 
     static update() {
-        SceneManager.currentScene.update()
+        SceneManager.currentScene.update(Time.deltaTime)
         Engine.animation.update(Time.deltaTime)
         Input.endFrame()
     }

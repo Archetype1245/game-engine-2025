@@ -1,5 +1,5 @@
 class Scene {
-    constructor(config={}) {
+    constructor(config = {}) {
         this.started = false
         this.layerOrder = ["background", "ui"]
         this.gameObjects = []
@@ -21,19 +21,18 @@ class Scene {
         this.gameObjects.forEach(go => go.start())
     }
 
-    update() {
+    update(dt) {
         this.gameObjects.filter(go => !go.hasStarted).forEach(go => { go.start(); go.hasStarted = true })
-        this.gameObjects.forEach(go => go.update())
+        this.gameObjects.forEach(go => go.update(dt))
 
         for (const [tag, gameObjects] of this.collidersByTag) {
             if (this.spatialMap.isTagTracked(tag)) {
                 gameObjects.forEach(go => this.spatialMap.update(go))
             }
         }
-        
+
         for (const pair of this.collisionPairs) {
             const [tagA, tagB] = pair
-            console.log(tagA, tagB)
             const actorSet = this.collidersByTag.get(tagA)
             const targetSet = this.collidersByTag.get(tagB)
 
@@ -125,6 +124,7 @@ class Scene {
 
         for (const layer of this.layerOrder) {
             const gameObjects = this.layerMap.get(layer)
+            if (layer === "ui") continue
             if (!gameObjects) continue
 
             for (const go of gameObjects) {
@@ -137,7 +137,16 @@ class Scene {
                 go.draw(ctx)
             }
         }
-
+        ctx.restore()
+        ctx.save()
+        const uiGameObjects = this.layerMap.get("ui")
+        if (uiGameObjects) {
+            for (const go of uiGameObjects) {
+                const W = go.transform.worldMatrix
+                ctx.setTransform(Mat2D.toDOMMatrix(W))
+                go.draw(ctx)
+            }
+        }
         ctx.restore()
     }
 
