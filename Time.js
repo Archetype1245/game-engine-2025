@@ -1,5 +1,4 @@
 class Time {
-    // More closely matches deltaTime rather than fixedDeltaTime
     static lastFrame = performance.now()
     static deltaTime = 0
 
