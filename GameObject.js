@@ -1,40 +1,47 @@
 class GameObject {
-    name = "GameObject"
+    name = "[NO NAME]"
     layer = "background"
     tag = "default"
     components = new Map()
     hasStarted = false
     markForDelete = false
 
-    constructor(name) {
+    constructor(name, options) {
         this.name = name
+        Object.assign(this, options)
         this.addComponent(new Transform())
+    }
+    
+    get transform() {
+        return this.getComponent(Transform)
+    }
+
+    broadcastMessage(name, ...args) {
+        for (const componentList of this.components.values()) {
+            for (const component of componentList) {
+                if (typeof component[name] === "function") {
+                    component[name](...args)
+                    // const fn = component[name]
+                    // fn.apply(component, args)
+                }
+            }
+        }
     }
 
     start() {
-        for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.start())
-        }
-
-        SceneManager.currentScene.registerForCollision(this)
+        this.broadcastMessage("start")
         this.hasStarted = true
+        // These only register GOs that fit the criteria (have some form of collider or a tracked tag, respectively)
+        SceneManager.currentScene.registerForCollision(this)
+        SceneManager.currentScene.registerInSpatialMap(this)
     }
 
     update(dt) {
-        for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.update(dt))
-        }
-
-        // if (this.hasStarted) {
-        //     component.start()
-
-        // }
+        this.broadcastMessage("update", dt)
     }
 
     draw(ctx) {
-        for (const componentList of this.components.values()) {
-            componentList.forEach(c => c.draw(ctx))
-        }
+        this.broadcastMessage("draw", ctx)
     }
 
     addComponent(component, values) {
@@ -58,16 +65,16 @@ class GameObject {
         return this.components.get(type) ?? []
     }
 
-    get transform() {
-        return this.getComponent(Transform)
-    }
-
     destroy() {
         this.markForDelete = true
     }
 
     static getObjectByName(name) {
-        return SceneManager.currentScene.gameObjects.find(gameObject => gameObject.name == name)
+        return SceneManager.currentScene.gameObjects.find(go => go.name === name)
+    }
+
+    static getObjectsByTag(tag) {
+        return SceneManager.currentScene.gameObjects.filter(go => go.tag === tag)
     }
 
     static instantiate(go, { position = null, scene = null, layer, forceStart = false }) {

@@ -12,6 +12,7 @@ class Scene {
 
         const trackedTags = config.trackedTags ?? []
         this.spatialMap = new SpatialMap(64, trackedTags)
+        this.objectsInSpatialMap = new Set()
 
         this.activeCamera = null
     }
@@ -24,12 +25,7 @@ class Scene {
     update(dt) {
         this.gameObjects.filter(go => !go.hasStarted).forEach(go => { go.start(); go.hasStarted = true })
         this.gameObjects.forEach(go => go.update(dt))
-
-        for (const [tag, gameObjects] of this.collidersByTag) {
-            if (this.spatialMap.isTagTracked(tag)) {
-                gameObjects.forEach(go => this.spatialMap.update(go))
-            }
-        }
+        for (const go of this.objectsInSpatialMap) { this.spatialMap.update(go) }
 
         for (const pair of this.collisionPairs) {
             const [tagA, tagB] = pair
@@ -108,7 +104,7 @@ class Scene {
             if (go.markForDelete) {
                 this.removeFromLayerMap(go)
                 this.unregisterForCollision(go)
-                this.spatialMap.remove(go)
+                this.unregisterInSpatialMap(go)
                 for (const componentList of go.components.values()) {
                     componentList.forEach(c => c.onDestroy?.())
                 }
@@ -179,7 +175,9 @@ class Scene {
     }
 
     getLayerNameByIndex(idx) {
-        if (idx < 0 || idx >= this.layerOrder.length) throw new RangeError(`Layer index out of range: ${idx}`)
+        if (idx < 0 || idx >= this.layerOrder.length) {
+            throw new RangeError(`Layer index out of range: ${idx}`)
+        }
         return this.layerOrder[idx]
     }
 
@@ -202,10 +200,6 @@ class Scene {
             this.collidersByTag.set(tag, new Set())
         }
         this.collidersByTag.get(tag).add(go)
-
-        if (this.spatialMap.isTagTracked(tag)) {
-            this.spatialMap.insert(go)
-        }
     }
 
     unregisterForCollision(go) {
@@ -219,5 +213,17 @@ class Scene {
                 this.collidersByTag.delete(tag)
             }
         }
+    }
+
+    registerInSpatialMap(go) {
+        if (!this.spatialMap.isTagTracked(go.tag)) return
+
+        this.spatialMap.insert(go)
+        this.objectsInSpatialMap.add(go)
+    }
+
+    unregisterInSpatialMap(go) {
+        this.spatialMap.remove(go)
+        this.objectsInSpatialMap.delete(go)
     }
 }

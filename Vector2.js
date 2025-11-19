@@ -66,15 +66,21 @@ class Vector2 {
     getDirectionVector(other) {
         return this.minus(other).normalize()
     }
+    // Mutates a Vector2 in place
+    setVec(x, y) {
+        this.x = x; this.y = y
+        return this
+    }
     // Returns the sum of multiple Vector2 objects inside an array
     static sum(arr) {
         let sum = Vector2.zero
         arr.forEach(v2 => sum.plusEquals(v2))
         return sum
     }
-    // Mutates a Vector2 in place
-    setVec(x, y) {
-        this.x = x; this.y = y
-        return this
+    static distance(v1, v2) {
+        const dx = Math.abs(v2.x - v1.x)
+        const dy = Math.abs(v2.y - v1.y)
+        return Math.hypot(dx, dy)
     }
+    
 }

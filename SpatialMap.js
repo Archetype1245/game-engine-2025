@@ -2,7 +2,6 @@ class SpatialMap {
     constructor(cellSize = 64, trackedTags = []) {
         this.cs = cellSize
         this.cellData = new Map()
-        this.shift = 6
         this.trackedTags = new Set(trackedTags)
     }
 
@@ -45,10 +44,13 @@ class SpatialMap {
         this.insert(object)
     }
 
-    searchNeighbors(actor, targetTag, hits = [], subType = 0, radius = this.cs) {
+    searchNeighbors(actor, targetTag, hits = [], radius = this.cs, subType = 0) {
         const t = actor.transform.position
-        const i0 = (t.x - radius) >> this.shift; const i1 = (t.x + radius) >> this.shift
-        const j0 = (t.y - radius) >> this.shift; const j1 = (t.y + radius) >> this.shift
+        // Floor divide to get correct cell after factoring in radius of search
+        const i0 = Math.floor((t.x - radius) / this.cs)
+        const i1 = Math.floor((t.x + radius) / this.cs)
+        const j0 = Math.floor((t.y - radius) / this.cs)
+        const j1 = Math.floor((t.y + radius) / this.cs)
 
         hits.length = 0
         for (let i = i0; i <= i1; i++) {
