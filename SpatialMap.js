@@ -44,7 +44,7 @@ class SpatialMap {
         this.insert(object)
     }
 
-    searchNeighbors(actor, targetTag, hits = [], radius = this.cs, subType = 0) {
+    searchNeighbors(actor, targetTag, hits = [], radius = this.cs, subType = undefined) {
         const t = actor.transform.position
         // Floor divide to get correct cell after factoring in radius of search
         const i0 = Math.floor((t.x - radius) / this.cs)
@@ -63,7 +63,7 @@ class SpatialMap {
 
                     const tag = target.tag
                     if (tag !== targetTag) continue
-                    if (subType && (target.subType & subType) === 0) continue  // Skip over objects that don't match the subtype (if one is passed)
+                    if (subType && subType !== target.subType) continue  // Skip over objects that don't match the subtype (if one is passed)
                     hits.push(target)
                 }
             }

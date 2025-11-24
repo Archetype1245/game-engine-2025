@@ -78,8 +78,8 @@ class Vector2 {
         return sum
     }
     static distance(v1, v2) {
-        const dx = Math.abs(v2.x - v1.x)
-        const dy = Math.abs(v2.y - v1.y)
+        const dx = v2.x - v1.x
+        const dy = v2.y - v1.y
         return Math.hypot(dx, dy)
     }
     
