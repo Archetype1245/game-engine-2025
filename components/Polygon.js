@@ -5,7 +5,9 @@ class Polygon extends Component {
     fill = true
     strokeStyle = null
     lineWidth = 1
+    operation = null
     closePath = true
+    filter = null
     hidden = false
 
     _path2d = null
@@ -43,21 +45,35 @@ class Polygon extends Component {
         if (this.closePath) p.closePath()
     }
 
+    _resolveStyle(style, ctx) {
+        return typeof style === "function" ? style(ctx) : style
+    }
+
     draw(ctx) {
         if (this.hidden || this.points.length < 2) return
 
+        ctx.save()
         const path = this.path2d
+
+        if (this.operation) {
+            ctx.globalCompositeOperation = this.operation
+        }
+
+        if (this.filter) {
+            ctx.filter = this.filter
+        }
+
         if (this.fill) {
-            ctx.fillStyle = this.fillStyle
+            ctx.fillStyle = this._resolveStyle(this.fillStyle, ctx)
             ctx.fill(path)
         }
-        
+
         if (this.strokeStyle) {
             const s = Math.abs(this.transform.scale.x)
             ctx.strokeStyle = this.strokeStyle
             ctx.lineWidth = this.lineWidth / s
-            ctx.miterLimit = 2
             ctx.stroke(path)
         }
+        ctx.restore()
     }
 }

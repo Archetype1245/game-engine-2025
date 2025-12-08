@@ -1,10 +1,11 @@
 class Scene {
     constructor(config = {}) {
         this.started = false
-        this.layerOrder = ["background", "ui"]
+        this.defaultLayerDefs = ["background", "ui"]
         this.gameObjects = []
-        this.layerMap = new Map()
-        this.initLayers()
+
+        const layerDefs = config.layerDefs ?? this.defaultLayerDefs
+        this._initLayers(layerDefs)
 
         this.collidersByTag = new Map()
         this.collisionPairs = config.collisionPairs ?? []
@@ -118,38 +119,32 @@ class Scene {
         ctx.save()
         const S = this.activeCamera.getScreenMatrix()
 
-        for (const layer of this.layerOrder) {
-            const gameObjects = this.layerMap.get(layer)
-            if (layer === "ui") continue
-            if (!gameObjects) continue
+        for (const name of this.layerOrder) {
+            const layer = this.layerMap.get(name)
+            if (!layer || layer.objects.size === 0) continue
 
-            for (const go of gameObjects) {
+            const layerMatrix = layer.space === "world" ? S : Mat2D.identity
+
+            for (const go of layer.objects) {
                 const W = go.transform.worldMatrix
                 const D = go.getComponent(Deform)?.getMatrix()
-                const M = D ? Mat2D.matrix2dMultiply(W, D) : W
-                const SM = Mat2D.matrix2dMultiply(S, M)
+                const objMatrix = D ? Mat2D.matrix2dMultiply(W, D) : W
 
-                ctx.setTransform(Mat2D.toDOMMatrix(SM))
-                go.draw(ctx)
-            }
-        }
-        ctx.restore()
-        ctx.save()
-        const uiGameObjects = this.layerMap.get("ui")
-        if (uiGameObjects) {
-            for (const go of uiGameObjects) {
-                const W = go.transform.worldMatrix
-                ctx.setTransform(Mat2D.toDOMMatrix(W))
+                const T = Mat2D.matrix2dMultiply(layerMatrix, objMatrix)
+
+                ctx.setTransform(Mat2D.toDOMMatrix(T))
                 go.draw(ctx)
             }
         }
         ctx.restore()
     }
 
-    initLayers() {
-        for (const layer of this.layerOrder) {
-            if (!this.layerMap.get(layer)) this.layerMap.set(layer, new Set())
-        }
+    _initLayers(layerDefs) {
+        this.layerOrder = layerDefs.map(d => d.name)       // Generate layer order using just the names from layerDefs
+        this.layerMap = new Map(layerDefs.map(d => [d.name, {
+            space: d.space,
+            objects: new Set()
+        }]))
     }
 
     ensureLayerOrThrow(layer) {
@@ -159,12 +154,12 @@ class Scene {
 
     addToLayerMap(go) {
         this.ensureLayerOrThrow(go.layer)
-        this.layerMap.get(go.layer)?.add(go)
+        this.layerMap.get(go.layer)?.objects.add(go)
     }
 
     removeFromLayerMap(go) {
         this.ensureLayerOrThrow(go.layer)
-        this.layerMap.get(go.layer)?.delete(go)
+        this.layerMap.get(go.layer)?.objects.delete(go)
     }
 
     changeLayer(go, layer) {

@@ -21,8 +21,6 @@ class GameObject {
             for (const component of componentList) {
                 if (typeof component[name] === "function") {
                     component[name](...args)
-                    // const fn = component[name]
-                    // fn.apply(component, args)
                 }
             }
         }
@@ -37,6 +35,7 @@ class GameObject {
     }
 
     update(dt) {
+        if (!this.hasStarted) this.start()
         this.broadcastMessage("update", dt)
     }
 
@@ -85,7 +84,9 @@ class GameObject {
         currentScene.addToLayerMap(go)
 
         if (position) go.transform.position = position
-        if (forceStart) { go.start(); go.hasStarted = true }
+        if (forceStart) {
+            go.start()
+        }
         return go
     }
 }

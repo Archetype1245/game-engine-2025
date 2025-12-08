@@ -29,6 +29,7 @@ class Transform extends Component {
         this._lastParentWorldVersion = -1
     }
 
+    get positionRef() { return this._position }  // Directly mutable reference
     get position() { return new Vector2(this._position.x, this._position.y) }
     set position(v) {
         this._position.x = v.x

@@ -25,10 +25,10 @@ class SpatialMap {
 
     remove(object) {
         const cell = this.cellData.get(object.cellKey)
-        if (cell) {
-            cell.delete(object)
-            if (!cell.size) this.cellData.delete(object.cellKey)
-        }
+        if (!cell) return
+        
+        cell.delete(object)
+        if (!cell.size) this.cellData.delete(object.cellKey)
     }
 
     update(object) {
