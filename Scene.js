@@ -25,9 +25,101 @@ class Scene {
 
     update(dt) {
         this.gameObjects.filter(go => !go.hasStarted).forEach(go => { go.start(); go.hasStarted = true })
-        this.gameObjects.forEach(go => go.update(dt))
-        for (const go of this.objectsInSpatialMap) { this.spatialMap.update(go) }
+        // this.gameObjects.forEach(go => go.update(dt))
 
+        // Bit of a hacky way of implementing different time scales - would fix with more time to work on it
+        // Each layer has a corresponding time scale - this just passes the correct `dt` value to each
+        // Ideally this would be more specific and times wouldn't necessarily be tied to layers
+        for (let i = this.layerOrder.length - 1; i >= 0; i--) {
+            const layerName = this.layerOrder[i]
+            const layer = this.layerMap.get(layerName)
+            if (!layer) continue
+            const dt = Time.dt[layer.time] ?? Time.dt.world
+            if (dt === 0) continue
+
+            for (const go of layer.objects) {
+                if (!go.markForDelete) go.update(dt)
+            }
+        }
+
+        // lateUpdate
+        for (let i = this.layerOrder.length - 1; i >= 0; i--) {
+            const layerName = this.layerOrder[i]
+            const layer = this.layerMap.get(layerName)
+            if (!layer) continue
+            const dt = Time.dt[layer.time] ?? Time.dt.world
+            if (dt === 0) continue
+
+            for (const go of layer.objects) {
+                if (!go.markForDelete) go.lateUpdate(dt)
+            }
+        }
+
+        if (Time.dt.world > 0) {
+            for (const go of this.objectsInSpatialMap) { this.spatialMap.update(go) }
+            this._runCollisionChecks()
+        }
+
+        this._cleanupDestroyed()
+    }
+
+    draw(ctx) {
+        this._beginCamera(ctx)
+        this.drawLayers(ctx, () => true) // draw everything by default
+        this._endCamera(ctx)
+    }
+
+    _beginCamera(ctx) {
+        ctx.save()
+
+        const vp = this.activeCamera.getViewportRect()
+
+        ctx.fillStyle = this.activeCamera.backgroundColor
+        ctx.fillRect(vp.x, vp.y, vp.width, vp.height)
+
+        ctx.beginPath()
+        ctx.rect(vp.x, vp.y, vp.width, vp.height)
+        ctx.clip()
+    }
+
+    _endCamera(ctx) {
+        ctx.restore()
+    }
+
+    drawLayers(ctx, shouldDrawLayer) {
+        const S = this.activeCamera.getScreenMatrix()
+
+        for (const name of this.layerOrder) {
+            if (shouldDrawLayer && !shouldDrawLayer(name)) continue
+
+            const layer = this.layerMap.get(name)
+            if (!layer || layer.objects.size === 0) continue
+
+            const layerMatrix = layer.space === "world" ? S : Mat2D.identity
+
+            for (const go of layer.objects) {
+                const W = go.transform.worldMatrix
+                const D = go.getComponent(Deform)?.getMatrix()
+                const objMatrix = D ? Mat2D.matrix2dMultiply(W, D) : W
+
+                const T = Mat2D.matrix2dMultiply(layerMatrix, objMatrix)
+
+                ctx.setTransform(Mat2D.toDOMMatrix(T))
+                go.draw(ctx)
+            }
+        }
+    }
+
+    _initLayers(layerDefs) {
+        this.layerOrder = layerDefs.map(d => d.name)       // Generate layer order using just the names from layerDefs
+        this.layerMap = new Map(layerDefs.map(d => [d.name, {
+            space: d.space,
+            objects: new Set(),
+            time: d.time ?? "world"
+        }]))
+    }
+
+    _runCollisionChecks() {
         for (const pair of this.collisionPairs) {
             const [tagA, tagB] = pair
             const actorSet = this.collidersByTag.get(tagA)
@@ -100,7 +192,9 @@ class Scene {
                 }
             }
         }
+    }
 
+    _cleanupDestroyed() {
         this.gameObjects = this.gameObjects.filter(go => {
             if (go.markForDelete) {
                 this.removeFromLayerMap(go)
@@ -115,50 +209,18 @@ class Scene {
         })
     }
 
-    draw(ctx) {
-        ctx.save()
-        const S = this.activeCamera.getScreenMatrix()
-
-        for (const name of this.layerOrder) {
-            const layer = this.layerMap.get(name)
-            if (!layer || layer.objects.size === 0) continue
-
-            const layerMatrix = layer.space === "world" ? S : Mat2D.identity
-
-            for (const go of layer.objects) {
-                const W = go.transform.worldMatrix
-                const D = go.getComponent(Deform)?.getMatrix()
-                const objMatrix = D ? Mat2D.matrix2dMultiply(W, D) : W
-
-                const T = Mat2D.matrix2dMultiply(layerMatrix, objMatrix)
-
-                ctx.setTransform(Mat2D.toDOMMatrix(T))
-                go.draw(ctx)
-            }
-        }
-        ctx.restore()
-    }
-
-    _initLayers(layerDefs) {
-        this.layerOrder = layerDefs.map(d => d.name)       // Generate layer order using just the names from layerDefs
-        this.layerMap = new Map(layerDefs.map(d => [d.name, {
-            space: d.space,
-            objects: new Set()
-        }]))
-    }
-
-    ensureLayerOrThrow(layer) {
+    _ensureLayerOrThrow(layer) {
         if (this.layerMap.has(layer)) return true
         throw new ReferenceError(`Layer "${layer}" not found`)
     }
 
     addToLayerMap(go) {
-        this.ensureLayerOrThrow(go.layer)
+        this._ensureLayerOrThrow(go.layer)
         this.layerMap.get(go.layer)?.objects.add(go)
     }
 
     removeFromLayerMap(go) {
-        this.ensureLayerOrThrow(go.layer)
+        this._ensureLayerOrThrow(go.layer)
         this.layerMap.get(go.layer)?.objects.delete(go)
     }
 
@@ -220,5 +282,29 @@ class Scene {
     unregisterInSpatialMap(go) {
         this.spatialMap.remove(go)
         this.objectsInSpatialMap.delete(go)
+    }
+
+    destroyAllGameObjects() {
+        this.gameObjects.forEach(go => go.destroy())
+
+        this._flushDestroyed()
+    }
+
+    _flushDestroyed() {
+        this.gameObjects = this.gameObjects.filter(go => {
+            if (!go.markForDelete) return true
+
+            this.removeFromLayerMap(go)
+            this.unregisterForCollision(go)
+            this.unregisterInSpatialMap(go)
+            for (const componentList of go.components.values()) {
+                componentList.forEach(c => c.onDestroy?.())
+            }
+            return false
+        })
+
+        this.collidersByTag.clear()
+        this.objectsInSpatialMap.clear()
+        this.spatialMap.clear()
     }
 }

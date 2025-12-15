@@ -3,43 +3,44 @@ class Engine {
         Engine.canvas = document.querySelector("#canv")
         Engine.ctx = Engine.canvas.getContext("2d")
         Input.attach(Engine.canvas)
-
-        Engine.offscreenCanvas = document.createElement("canvas")
-        Engine.ctxOS = Engine.offscreenCanvas.getContext("2d", {alpha: true})
         
         window.addEventListener("resize", Engine.resizeCanvas)
         Engine.resizeCanvas()
+        Engine.animation = new AnimationManager()
 
         SceneManager.update()
         SceneManager.currentScene.start()
-        Engine.animation = new AnimationManager()
-        // Engine.fps = new FPSTracker({ smooth: 0.9, history: 240, uiHz: 4 });
+        Engine.renderer = Engine.defaultRenderer
         requestAnimationFrame(Engine.gameLoop)
     }
 
-
     static gameLoop(now) {
-        Time.update()
+        Time.update(now)
         SceneManager.update()
         Engine.update()
         Engine.draw()
-        // Engine.fps.frame(now)
         requestAnimationFrame(Engine.gameLoop)
     }
 
     static update() {
-        SceneManager.currentScene.update(Time.deltaTime)
-        Engine.animation.update(Time.deltaTime)
+        SceneManager.currentScene.update(Time.unscaledDeltaTime)
+        Engine.animation.update()
         Input.endFrame()
     }
 
     static draw() {
-        Engine.ctx.fillStyle = SceneManager.currentScene.activeCamera.backgroundColor
-        Engine.ctx.beginPath()
-        Engine.ctx.rect(0, 0, Engine.canvas.width, Engine.canvas.height)
-        Engine.ctx.fill()
+        const ctx = Engine.ctx
+        const scene = SceneManager.currentScene
 
-        SceneManager.currentScene.draw(Engine.ctx)
+        ctx.fillStyle = "black"
+        ctx.fillRect(0, 0, Engine.canvas.width, Engine.canvas.height)
+
+        // scene.draw(ctx)
+        Engine.renderer(ctx, scene)
+    }
+
+    static defaultRenderer(ctx, scene) {
+        scene.draw(ctx)
     }
 
     static resizeCanvas() {

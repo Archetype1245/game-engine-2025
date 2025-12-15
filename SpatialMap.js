@@ -6,8 +6,8 @@ class SpatialMap {
     }
 
     isTagTracked(tag) { return this.trackedTags.has(tag) }
-    keyFromPos(x, y) { return `${Math.floor(x / this.cs)},${Math.floor(y / this.cs)}` }
-    keyFromCell(i, j) { return `${i},${j}` }
+    _keyFromPos(x, y) { return `${Math.floor(x / this.cs)},${Math.floor(y / this.cs)}` }
+    _keyFromCell(i, j) { return `${i},${j}` }
 
     insert(object) {
         const tag = object.tag
@@ -15,7 +15,7 @@ class SpatialMap {
 
         if (!object.cellKey) {
             const t = object.transform.position
-            object.cellKey = this.keyFromPos(t.x, t.y)
+            object.cellKey = this._keyFromPos(t.x, t.y)
         }
 
         let cell = this.cellData.get(object.cellKey)
@@ -26,7 +26,7 @@ class SpatialMap {
     remove(object) {
         const cell = this.cellData.get(object.cellKey)
         if (!cell) return
-        
+
         cell.delete(object)
         if (!cell.size) this.cellData.delete(object.cellKey)
     }
@@ -34,9 +34,9 @@ class SpatialMap {
     update(object) {
         const tag = object.tag
         if (!this.isTagTracked(tag)) return
-        
+
         const p = object.transform._position
-        const newKey = this.keyFromPos(p.x, p.y)
+        const newKey = this._keyFromPos(p.x, p.y)
         if (newKey === object.cellKey) return
 
         this.remove(object)
@@ -55,7 +55,7 @@ class SpatialMap {
         hits.length = 0
         for (let i = i0; i <= i1; i++) {
             for (let j = j0; j <= j1; j++) {
-                const cell = this.cellData.get(this.keyFromCell(i, j))
+                const cell = this.cellData.get(this._keyFromCell(i, j))
                 if (!cell) continue
 
                 for (const target of cell) {
@@ -69,5 +69,43 @@ class SpatialMap {
             }
         }
         return hits
+    }
+
+    
+    searchRadiusMultiTag(centerX, centerY, radius, targetTags, hits = [], exclude = null) {
+        const r2 = radius * radius
+        const i0 = Math.floor((centerX - radius) / this.cs)
+        const i1 = Math.floor((centerX + radius) / this.cs)
+        const j0 = Math.floor((centerY - radius) / this.cs)
+        const j1 = Math.floor((centerY + radius) / this.cs)
+        
+        const tagSet = targetTags instanceof Set ? targetTags : new Set(targetTags)
+        
+        hits.length = 0
+        for (let i = i0; i <= i1; i++) {
+            for (let j = j0; j <= j1; j++) {
+                const cell = this.cellData.get(this._keyFromCell(i, j))
+                if (!cell) continue
+                
+                for (const target of cell) {
+                    if (target === exclude) continue
+                    if (target.markForDelete) continue
+                    if (!tagSet.has(target.tag)) continue
+                    
+                    // Actual distance check for accuracy at cell boundaries
+                    const p = target.transform._position
+                    const dx = p.x - centerX
+                    const dy = p.y - centerY
+                    if (dx * dx + dy * dy > r2) continue
+                    
+                    hits.push(target)
+                }
+            }
+        }
+        return hits
+    }
+
+    clear() {
+        this.cellData.clear()
     }
 }

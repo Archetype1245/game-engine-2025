@@ -70,10 +70,11 @@ class Polygon extends Component {
 
         if (this.strokeStyle) {
             const s = Math.abs(this.transform.scale.x)
-            ctx.strokeStyle = this.strokeStyle
+            ctx.strokeStyle = this._resolveStyle(this.strokeStyle, ctx)
             ctx.lineWidth = this.lineWidth / s
             ctx.stroke(path)
         }
+
         ctx.restore()
     }
 }

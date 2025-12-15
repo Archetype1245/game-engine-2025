@@ -1,15 +1,13 @@
 class LineBatch extends Component {
     name = "LineBatch"
 
-    // Array of { a: Vector2, b: Vector2, data?: any }
-    segments = []
+    segments = []  // Array { a, b, data? }
 
     // Can be a constant (string/CanvasGradient) or function (ctx, seg, i) => style
     strokeStyle = "white"
     lineWidth = 2
 
-    // true = one Path2D + one stroke(); false = per-segment styling
-    batched = true
+    batched = true   // false for per-segment styling
     hidden = false
 
     _path2d = null

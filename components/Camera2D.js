@@ -15,7 +15,7 @@ class Camera2D extends Component {
 
     setZoom(z) {
         this.zoom = z
-        this._recomputeEffective
+        this._recomputeEffective()
     }
 
     setView({ width, height, aspect=this.aspect }) {
@@ -35,7 +35,7 @@ class Camera2D extends Component {
     }
     
     scaleRatio(cnv) {
-        // Take the smaller ratio and letterbox the other
+        // Take the smaller ratio and potentially letterbox the other
         const xRatio = cnv.width / this.effW
         const yRatio = cnv.height / this.effH
         return Math.min(xRatio, yRatio)
@@ -59,9 +59,22 @@ class Camera2D extends Component {
         return Mat2D.applyMatrixToPoint(M, p)
     }
 
-    getVisibleWorldSize() {
-        const cnv = Engine.canvas
+    getCanvasWorldExtent(cnv = Engine.canvas) {
         const ratio = this.scaleRatio(cnv)
         return { width: cnv.width / ratio, height: cnv.height / ratio }
+    }
+
+    getVisibleWorldSize() {
+        return { width: this.effW, height: this.effH}
+    }
+
+    getViewportRect(cnv = Engine.canvas) {
+        const ratio = this.scaleRatio(cnv)
+        const viewPixelWidth = this.effW * ratio
+        const viewPixelHeight = this.effH * ratio
+        const vx = (cnv.width - viewPixelWidth) / 2
+        const vy = (cnv.height - viewPixelHeight) / 2
+
+        return { x: vx, y: vy, width: viewPixelWidth, height: viewPixelHeight }
     }
 }

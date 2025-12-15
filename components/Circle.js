@@ -1,12 +1,7 @@
-/**
- * Circle - A reusable engine draw component for rendering circles.
- * Supports solid fills, gradient fills (via function), and optional stroke/glow.
- * Draws in local space at the GameObject's origin, respecting transform.
- */
 class Circle extends Component {
     constructor({
         radius = 10,
-        fillStyle = "#ffffff",      // string | CanvasGradient | (ctx, radius) => style
+        fillStyle = "#ffffff",
         fill = true,
         strokeStyle = null,
         lineWidth = 1,
@@ -16,17 +11,15 @@ class Circle extends Component {
         alpha = 1.0,
     } = {}) {
         super()
-        Object.assign(this, {
-            radius,
-            fillStyle,
-            fill,
-            strokeStyle,
-            lineWidth,
-            shadowColor,
-            shadowBlur,
-            hidden,
-            alpha,
-        })
+        this.radius = radius
+        this.fillStyle = fillStyle
+        this.fill = fill
+        this.strokeStyle = strokeStyle
+        this.lineWidth = lineWidth
+        this.shadowColor = shadowColor
+        this.shadowBlur = shadowBlur
+        this.hidden = hidden
+        this.alpha = alpha
     }
 
     draw(ctx) {
@@ -46,7 +39,7 @@ class Circle extends Component {
         }
 
         ctx.beginPath()
-        ctx.arc(0, 0, this.radius, 0, Math.PI * 2)
+        ctx.arc(0, 0, this.radius, 0, MathUtils.TAU)
 
         if (this.fill && resolvedFillStyle) {
             ctx.fillStyle = resolvedFillStyle

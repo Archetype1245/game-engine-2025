@@ -24,7 +24,6 @@ class Text extends Component {
         alpha: 1
     }
 
-
     draw(ctx) {
         if (!this.text || this.hidden) return
 

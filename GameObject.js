@@ -11,7 +11,7 @@ class GameObject {
         Object.assign(this, options)
         this.addComponent(new Transform())
     }
-    
+
     get transform() {
         return this.getComponent(Transform)
     }
@@ -37,6 +37,10 @@ class GameObject {
     update(dt) {
         if (!this.hasStarted) this.start()
         this.broadcastMessage("update", dt)
+    }
+
+    lateUpdate(dt) {
+        this.broadcastMessage("lateUpdate", dt)
     }
 
     draw(ctx) {
@@ -66,6 +70,10 @@ class GameObject {
 
     destroy() {
         this.markForDelete = true
+        const children = this.transform.children
+        for (const child of children) {
+            child.gameObject.destroy()
+        }
     }
 
     static getObjectByName(name) {

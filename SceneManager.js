@@ -3,17 +3,24 @@ class SceneManager {
     static nextScene
 
     static update() {
-        if (SceneManager.nextScene) {
-            SceneManager.currentScene = SceneManager.nextScene
-            SceneManager.nextScene = undefined
+        if (!this.nextScene) return
+
+        if (this.currentScene) {
+            Events.clearEventListeners()
+            Engine.animation?.clear()
+            Time.clearTimers()
+            this.currentScene?.destroyAllGameObjects()
         }
+
+        this.currentScene = this.nextScene
+        this.nextScene = undefined
     }
     
     static loadScene(scene) {
-        SceneManager.nextScene = scene
+        this.nextScene = scene
     }
 
     static getActiveScene() {
-        return SceneManager.currentScene
+        return this.currentScene
     }
 }

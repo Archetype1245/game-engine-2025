@@ -30,8 +30,11 @@ class Deform extends Component {
     getMatrix() {
         if (!this._dirty) return this._M
 
-        const u = this.u, v = this.v, centroid = this.c
-        const su = this.su, sv = this.sv
+        const u = this.u
+        const v = this.v
+        const su = this.su
+        const sv = this.sv
+        const centroid = this.c
 
         const det = u.x*v.y - u.y*v.x
         if (!Number.isFinite(det) || Math.abs(det) < MathUtils.EPS) {

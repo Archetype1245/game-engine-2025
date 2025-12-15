@@ -1,5 +1,4 @@
 class Mat2D {
-    // Helpers - can be used to easily combine multiple transforms into a single matrix
     // Returns the identity matrix, where î and ĵ are their default values (no scale/rotation), with no translation
     static get identity() { return { a: 1, b: 0, c: 0, d: 1, tx: 0, ty: 0 } }
 

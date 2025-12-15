@@ -22,7 +22,6 @@ class BehaviorTree extends Component {
     }
 }
 
-// Base class for all of the behavior tree nodes
 class BTNode {
     constructor() {
         this.children = []
@@ -41,7 +40,6 @@ class BTNode {
     }
 }
 
-// Repeats its child node a specified number of times (or indefinitely)
 class BTRepeater extends BTNode {
     constructor(times = -1) {
         super()
@@ -92,7 +90,6 @@ class BTRepeater extends BTNode {
     }
 }
 
-// Runs children in order. Fails if any child fails. Succeeds if all children succeed.
 class BTSequence extends BTNode {
     constructor() {
         super()
@@ -121,7 +118,6 @@ class BTSequence extends BTNode {
     }
 }
 
-// Runs children one by one until one succeeds
 class BTSelector extends BTNode {
     constructor() {
         super()
@@ -151,7 +147,6 @@ class BTSelector extends BTNode {
     }
 }
 
-// Runs children simultaneously
 class BTParallel extends BTNode {
     constructor() {
         super()
@@ -184,7 +179,6 @@ class BTParallel extends BTNode {
         }
     }
 }
-
 
 class BTDuration extends BTNode {
     constructor(duration = 1.0) {

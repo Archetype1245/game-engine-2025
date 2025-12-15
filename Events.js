@@ -24,7 +24,6 @@ class Events {
         const listeners = this.handlers.get(signal)
         if (!listeners) return
 
-        // copy protects against changes during dispatch
         for (const listener of [...listeners]) {
             if (typeof listener === "function") {
                 listener(event)

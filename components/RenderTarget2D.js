@@ -1,15 +1,10 @@
-/**
- * RenderTarget2D - A reusable engine component for offscreen/cached procedural rendering.
- * Owns its own OffscreenCanvas, only re-renders when marked dirty.
- * Draws the cached buffer to the main canvas with configurable anchor, alpha, and shadow.
- */
 class RenderTarget2D extends Component {
     constructor({
         width = 64,
         height = 64,
-        renderFn = null,            // (ctxOS, w, h) => void
-        anchorX = 0,                // 0..1, 0 = left edge at origin, 0.5 = centered
-        anchorY = 0.5,              // 0..1, 0 = top edge at origin, 0.5 = centered
+        renderFn = null,
+        anchorX = 0,    
+        anchorY = 0.5,  
         alpha = 1.0,
         shadowColor = null,
         shadowBlur = 0,
@@ -48,10 +43,6 @@ class RenderTarget2D extends Component {
         return this._ctx
     }
 
-    /**
-     * Resize the offscreen canvas. Only reallocates if dimensions actually changed.
-     * @returns {boolean} True if resize occurred
-     */
     setSize(w, h) {
         w = Math.max(1, Math.floor(w))
         h = Math.max(1, Math.floor(h))
@@ -76,9 +67,6 @@ class RenderTarget2D extends Component {
         return this._dirty
     }
 
-    /**
-     * Force immediate re-render of the offscreen buffer.
-     */
     render() {
         if (!this.renderFn) return
 

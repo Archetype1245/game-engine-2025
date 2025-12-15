@@ -152,10 +152,22 @@ class Transform extends Component {
         }
     }
 
+    setFromMatrix(m) {
+        this._position.x = m.tx
+        this._position.y = m.ty
+
+        const sx = Math.hypot(m.a, m.b) || MathUtils.EPS
+        const sy = Math.hypot(m.c, m.d) || MathUtils.EPS
+        this._scale.x = sx
+        this._scale.y = sy
+
+        this._rotation = Math.atan2(m.b, m.a)
+
+        this.markLocalDirty()
+    }
+
     setParent(newParent, keepWorldPos = true) {
-        const p = this.position
-        const r = this.rotation
-        const s = this.scale
+        const world = this.worldMatrix
 
         if (this.parent) {
             const children = this.parent.children
@@ -167,10 +179,9 @@ class Transform extends Component {
         if (newParent) newParent.children.push(this)     // Add current transform to new parent's list of children
 
         if (keepWorldPos) {
-            // Update transform's local values according to the new parent's position
-            this.rotation = r
-            this.scale = s
-            this.position = p
+            const parentWorldInv = newParent ? Mat2D.invMatrix(newParent.worldMatrix) : Mat2D.identity
+            const local = Mat2D.matrix2dMultiply(parentWorldInv, world)
+            this.setFromMatrix(local)
         }
     }
 }
